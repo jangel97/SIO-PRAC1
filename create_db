@@ -1,0 +1,5 @@
+CREATE TABLE Metge (MetgeId VARCHAR(20) PRIMARY KEY, Especialitat VARCHAR(20));
+
+CREATE TABLE Esdeveniment (EsdevenimentId INTEGER PRIMARY KEY,MetgeId VARCHAR(10) NOT NULL REFERENCES Metge (MetgeId), Accio VARCHAR(30),PacientId VARCHAR(20),PacientEdat INTEGER, Timestamp VARCHAR(30));
+
+CREATE TABLE Episodi (EpisodiId VARCHAR(15), EsdevenimentId INTEGER PRIMARY KEY REFERENCES Esdeveniment (EsdevenimentId));
