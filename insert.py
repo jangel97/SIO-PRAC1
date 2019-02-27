@@ -1,18 +1,30 @@
 #!/usr/bin/python
 import psycopg2 
 
+#per inserir metges fer insert en bucle de id 0(o1 no menrecordo) a 300 i nom M0(o1) a M300
 
 def getFile():
-    with open("prac1_events_hospital.csv","r") as ins:
+    with open("dades.csv","r") as ins:
+	i=1
+	while i < 301:
+		insert("metge","metgeid","'"+"M"+str(i)+"'")
+		i=i+1
+	print 'metges guardats'
+	i=0
+	insertEsdeveniments();
+	print 'esdeveniments insertats'
+	'''
         for line in ins:
             arr=map(lambda x:x.rstrip(),line.split(';'))    #coge sin saltos de linea ni nada
-            insert("metge","metgeid","'"+arr[2]+"'")
             insert("esdeveniment","esdevenimentid,metgeid,accio,pacientid,pacientedat,timestamp","'"+arr[0]+"'"+','+"'"+arr[2]+"'"+','+"'"+arr[5]+"'"+','+"'"+arr[3]+"'"+','+"'"+arr[4]+"'"+','+"'"+arr[6]+"'")
             insert("episodi","episodiid,esdevenimentid","'"+arr[1]+"'"+",'"+arr[0]+"'")
+            if i % 50000 == 0:
+		print i
+	'''
 def connect():
     conn = None 
     try:
-        conn = psycopg2.connect("host=localhost dbname=sio1 user=postgres password=postgres")
+        conn = psycopg2.connect("host=localhost dbname=siopractica1 user=postgres password=postgres")
 
 # create a cursor
         cur = conn.cursor()
@@ -62,15 +74,31 @@ fields = "id, kind, date"
 values = "17965, Barn owl, 2006-07-16"
 insert(type, fields, values) 
 '''
+def insertEsdeveniments():
+     connection = psycopg2.connect("host=localhost dbname=siopractica1 user=postgres password=postgres")
+     try:  
+        mark = connection.cursor()
+	f = open(r'dades.csv', 'r')
+	mark.copy_from(f, "esdeveniment", sep=';')
+	f.close()
+     except (Exception, psycopg2.DatabaseError) as error:
+	print error         
+	#pass
+
+     return 
 def insert(table, columns, values):
-     connection = psycopg2.connect("host=localhost dbname=sioPRACTICA1 user=postgres password=postgres")
+     connection = psycopg2.connect("host=localhost dbname=siopractica1 user=postgres password=postgres")
      try:  
         mark = connection.cursor()
         statement = "INSERT INTO " + table + " (" + columns + ") VALUES ( "+ values + " );"
         mark.execute(statement)
         connection.commit()
+	#f = open(r'dades.csv', 'r')
+	#mark.copy_from(f, table, sep=',')
+	#f.close()
      except (Exception, psycopg2.DatabaseError) as error:
-         print error
+	print error         
+	#pass
 
      return 
 
