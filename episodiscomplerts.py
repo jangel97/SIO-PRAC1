@@ -8,123 +8,51 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pygraphviz
 from itertools import izip
+from multiprocessing.dummy import Pool as ThreadPool
 
-def grouped(iterable, n):
-    "s -> (s0,s1,s2,...sn-1), (sn,sn+1,sn+2,...s2n-1), (s2n,s2n+1,s2n+2,...s3n-1), ..."
-    return izip(*[iter(iterable)]*n)
+def generateGraph(consulta,filename):
 
-'''
-CREATE TABLE esdeveniments2 (ESDEVENIMENT numeric(10), EPISODI varchar(10), METGE varchar(100), PACIENT varchar(10), EDAT numeric(10), ACCIO varchar(100), DATA timestamp);
-'''
-def convertTuple(tup): 
-		pr = functools.reduce(operator.add, (tup)) 
-		return pr
-def connect():
-	conn = None 
 	try:
-       		conn = psycopg2.connect("host=localhost dbname=siodefinitiva user=postgres password=postgres")
+       			conn = psycopg2.connect("host=localhost dbname=siodefinitiva user=postgres password=postgres")
 
-# create a cursor
-		cur = conn.cursor()
-        
- # execute a statement
-		try:
-		    print('PostgreSQL database version:')
-		    cur.execute('SELECT version()')
-		except:
-		    print 'no pudo coger la version de la db'
-
-
-        # display the PostgreSQL database server version
-		db_version = cur.fetchone()
-		print(db_version)
-		   
-		try:
-
+			cur = conn.cursor()
+	
 			print 'Mineria'
 			print 'Juntar episodis amb esdeveniments'
 			   
-			diccionari={}
-			cur.execute("SELECT EPISODI,ACCIO FROM esdeveniments2 WHERE EPISODI IN (SELECT DISTINCT(EPISODI) FROM ESDEVENIMENTS2) GROUP BY EPISODI,ACCIO;")
-			episodiiesdeveniments=cur.fetchall()
-			#episodis=map(lambda x:list(diccionari[x[0]]).append(x[1]),episodiiesdeveniment)
-			#print episodis
-			#episodis=map(lambda x:x[0],episodiiesdeveniment)
-			#episodiiesdeveniment=map(lambda x:(x[0]),episodiiesdeveniment)
-			#print episodiiesdeveniment
-			
-			
-			
-			#print episodiiesdeveniment
-			i=0
-			#ho limitem a 1000 esdeveniments pero ho hem de canviar
-				    
 			taulaaccions=['Radiografia', 'Electrocardiograma', 'Mesurament i pesatge', 'Oximetria', 'Vacuna', 'Donar piruleta', 'Enguixar extremitat', 'Analisi de sang', 'Receptar medicament', 'Posar tireta']
 			matriu=np.zeros((10,10),dtype=int)
 			print matriu
-			lista=grouped(episodiiesdeveniments,2)
-			for episodiiesdeveniment1,episodiiesdeveniment2 in lista:
-				index1=taulaaccions.index(episodiiesdeveniment1[1])
-				index2=taulaaccions.index(episodiiesdeveniment2[1])
-				matriu[index1][index2]=matriu[index1][index2]+1
+			diccionari={}
+			cur.execute(consulta)
+			episodiiesdeveniments=cur.fetchall()	
+			#episodiiesdeveniments=map(lambda x:dict(x),episodiiesdeveniments)
+			#episodiiesdeveniments=[('EP1','Radiografia'),('EP1','Caramelo'),('EP1','Radiografia'),('EP2','loko'),('EP2','loko2'),('EP2','loko3'),('EP2','loko4')]
+			diccionari={}
+			for acciioesdev in episodiiesdeveniments:
+				diccionari.setdefault(acciioesdev[0], []).append(acciioesdev[1])
+
+
+			for episodi in diccionari.keys():
+				accions=diccionari[str(episodi)]
+				for accio1,accio2 in zip(accions, accions[1 : ]):
+					index1=taulaaccions.index(accio1)
+					index2=taulaaccions.index(accio2)
+					matriu[index1][index2]=matriu[index1][index2]+1
 			print matriu
-				
-				
-
-
-
-
-
-			'''  
-			print episodiiesdeveniments[:10]
-			for episodiiesdeveniment in episodiiesdeveniments[:10]:
-			#buscar tots els esdeveniments daquest mateix episodi
-				#cur.execute("SELECT ESDEVENIMENT FROM esdeveniments2 WHERE EPISODI = '" + str(episodi) + "';")		
-				accions=[]
-				#prova = convertTuple(row) 
-				#print(prova)
-				index=0
-				for row in cur.fetchall():
-					taulaaux=['taulaaccions']
-					#retorna un a un els valors
-					row= convertTuple(row)
-					cur.execute("SELECT ACCIO FROM esdeveniments2 WHERE ESDEVENIMENT = " + str(row) + ";")
-					accio=map(lambda x:x[0] ,cur.fetchall())[0]
-					accions.append(accio)
-				if len(accions)>1:
-					#print diccionari
-					i=0
-					for accio in accions:
-						#print accio
-						index1=taulaaccions.index(accio)
-						try:
-							index2=taulaaccions.index(accions[i+1])
-							matriu[index1][index2]=matriu[index1][index2]+1	
-							i=i+1
-						except:
-							pass
-				 	diccionari[episodi]=accions
-					#print matriu
-	 		 
-			matriu=[[  2  , 0 ,  0  , 0  , 0 ,  0 , 56  ,65 , 49  , 0],
-	 [  0,  77 ,  0 ,103 ,  0 ,  0  , 0 , 64 ,  0 ,  0],
-	 [  0  , 0 ,  0 ,  0 , 70 , 14 ,  0 , 35 ,  0 ,  0],
-	 [  0 , 99 ,  0  , 3  , 0  , 0  , 0  ,51 ,  0 ,  0],
-	 [  0 ,  0 ,  0 ,  0 , 33 ,  0 ,  0 , 17  , 0 , 113],
-	 [  0 ,  0 , 63 ,  0 , 14  , 0 ,  0 , 33  , 0 ,  0],
-	 [ 15  , 0  , 0 ,  0 ,  0  , 0  , 0 ,  6 , 17  , 0],
-	 [ 67 , 60  , 0 , 30 , 13 ,  0  , 0  ,58 , 54 ,121],
-	 [ 27 ,  0   ,0  , 0  , 0  , 0  , 0 , 23 , 91  , 0],
-	 [  0  , 0  , 5  , 0   ,0 ,236  , 0 ,  4 ,  0 , 10]]
-	 		
-			#print matriu
+								
 			i=0
 			j=0
+			print 'loko'
 			matriuResultats=np.zeros((10,10),dtype=float)
 			resultats=map(lambda linea:sum(linea),matriu)
+			print 'loko'
 			for linea in matriu:
 				for elem in linea:
-					matriuResultats[i][j]=(float(elem)/resultats[i])
+					if resultats[i]!=0:
+						matriuResultats[i][j]=(float(elem)/resultats[i])
+					else:
+						matriuResultats[i][j]=0
 					j=j+1
 				i=i+1
 				j=0
@@ -173,16 +101,12 @@ def connect():
 				nx.draw_networkx_edges(G,pos,edgelist=weighted_edges,width=width,edge_color = 'black', arrows=True, arrowstyle='fancy', arrowsize=12)
 		
 			plt.axis('off')
-			plt.title('Processes Graph')
-			plt.savefig("Tots_episodis.png")
+			plt.title(filename)
+			plt.savefig(filename+".png")
 			plt.show()
-			'''
-		except (Exception, psycopg2.DatabaseError) as error:
-    #except:
-	        	print(error) 
+			return matriu
 
-     # close the communication with the PostgreSQL	
-		cur.close()
+			cur.close()
 	except (Exception, psycopg2.DatabaseError) as error:
     #except:
 	        print(error)
@@ -190,6 +114,16 @@ def connect():
 	        if conn is not None:
 	            conn.close()
 	            print('Database connection closed.')
+	return None
 
 if __name__ == '__main__':
-    connect()
+	import sys
+	print generateGraph(str(sys.argv[1]), str(sys.argv[2]))
+	#generateGraph("SELECT EPISODI,ACCIO FROM esdeveniments2 WHERE EPISODI IN (SELECT DISTINCT(EPISODI) FROM ESDEVENIMENTS2) GROUP BY EPISODI,ACCIO;")
+	#generateGraph("SELECT episodi,accio from esdeveniments2 where metge IN (select metgeid from metge  where especialitat='Traumatoleg') GROUP BY episodi,accio;")
+	#generateGraph("SELECT episodi,accio from esdeveniments2 where metge IN (select metgeid from metge  where especialitat='Cardioleg') GROUP BY episodi,accio;")
+	#generateGraph("SELECT episodi,accio from esdeveniments2 where metge IN (select metgeid from metge  where especialitat='Pediatra') GROUP BY episodi,accio;")
+
+
+
+
